@@ -106,7 +106,61 @@ export class CLI {
   }
 
   private async parseAndExecuteCommand(response: string): Promise<void> {
-    // Extract code blocks from response
+    // Accept structured JSON actions or xml-like tags in addition to markdown code blocks.
+    const trimmed = response.trim();
+
+    // 1) JSON action support: { "action": "create_file", "path": "...", "content": "..." }
+    if (trimmed.startsWith('{')) {
+      try {
+        const obj = JSON.parse(trimmed);
+        if (obj && obj.action === 'create_file' && obj.path && obj.content) {
+          try {
+            await this.fileOps.createFile(obj.path, obj.content);
+            console.log('\x1b[32m✅ Created from JSON action: ' + obj.path + '\x1b[0m');
+            return;
+          } catch (e) {
+            console.error('\x1b[31m❌ Failed to create file from JSON action:\x1b[0m', e instanceof Error ? e.message : e);
+            return;
+          }
+        }
+        if (obj && obj.action === 'edit_file' && obj.path && obj.content) {
+          try {
+            await this.fileOps.editFile(obj.path, obj.content);
+            console.log('\x1b[32m✅ Updated from JSON action: ' + obj.path + '\x1b[0m');
+            return;
+          } catch (e) {
+            console.error('\x1b[31m❌ Failed to update file from JSON action:\x1b[0m', e instanceof Error ? e.message : e);
+            return;
+          }
+        }
+      } catch (e) {
+        // not JSON or parse error - fall through to markdown parsing
+      }
+    }
+
+    // 2) Simple XML-like tag support: <write_to_file><path>...</path><content>...</content></write_to_file>
+    if (trimmed.includes('<write_to_file>')) {
+      try {
+        const pathMatch = trimmed.match(/<path>([\s\S]*?)<\/path>/i);
+        const contentMatch = trimmed.match(/<content>([\s\S]*?)<\/content>/i);
+        if (pathMatch && contentMatch) {
+          const p = pathMatch[1].trim();
+          const c = contentMatch[1];
+          try {
+            await this.fileOps.createFile(p, c);
+            console.log('\x1b[32m✅ Created from tag: ' + p + '\x1b[0m');
+            return;
+          } catch (e) {
+            console.error('\x1b[31m❌ Failed to create file from tag:\x1b[0m', e instanceof Error ? e.message : e);
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore and fall through
+      }
+    }
+
+    // 3) Fallback: extract markdown code blocks as before
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     let match;
 
@@ -134,8 +188,10 @@ export class CLI {
 
         let targetIsDir = false;
         try {
+          // Resolve relative paths against cwd so existence checks are accurate
+          const resolvedPath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
           // If user entered an existing directory, treat as directory
-          if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+          if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory()) {
             targetIsDir = true;
           }
           // If user input ends with path separator, treat as directory
@@ -164,6 +220,26 @@ export class CLI {
         }
 
         try {
+          // Defensive check: if given path is a directory (or looks like one), ensure a filename is appended
+          const pathLib = require('path');
+          try {
+            if ((fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) || filePath.endsWith(pathLib.sep) || filePath.endsWith('/') || filePath.endsWith('\\') || pathLib.basename(filePath) === '') {
+              let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
+              filename = filename.trim();
+              if (!filename) {
+                const inferFromCode = (code.match(/^[#\/\*\s-]*([\w\-._]+\.(py|js|ts|txt|md|json|html|css))/mi) || [])[1];
+                const extMap: any = { python: 'py', py: 'py', javascript: 'js', typescript: 'ts', txt: 'txt' };
+                const inferredExt = extMap[language] || language || 'txt';
+                const inferredName = inferFromCode || `untitled.${inferredExt}`;
+                filename = inferredName;
+                console.log(`ℹ️  Inferred filename: ${filename}`);
+              }
+              filePath = pathLib.join(filePath, filename);
+            }
+          } catch (e) {
+            // ignore detection errors and proceed
+          }
+
           await this.fileOps.createFile(filePath, code);
         } catch (err) {
           console.error('\x1b[31m❌ Error: Could not create the file.\x1b[0m', err instanceof Error ? err.message : err);

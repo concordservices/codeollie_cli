@@ -14,7 +14,19 @@ export class FileOperations {
 
   async createFile(filePath: string, content: string): Promise<void> {
     try {
-      const fullPath = this.resolvePath(filePath);
+      let fullPath = this.resolvePath(filePath);
+
+      // If target is an existing directory, treat as directory and create an untitled file inside it.
+      try {
+        const stat = await fs.stat(fullPath);
+        if (stat.isDirectory()) {
+          // default filename when user provided a directory
+          fullPath = path.join(fullPath, 'untitled.txt');
+        }
+      } catch (e) {
+        // stat failed -> path may not exist yet; continue normally
+      }
+
       const dir = path.dirname(fullPath);
 
       await fs.mkdir(dir, { recursive: true });
