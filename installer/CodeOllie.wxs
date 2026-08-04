@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="CodeOllie CLI" Language="1033" Version="1.0.0" Manufacturer="Concord Services" UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of CodeOllie is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Install directory -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="APPLICATIONROOT" Name="CodeOllie">
+          <Directory Id="BINDIR" Name="bin" />
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="CodeOllie" />
+      </Directory>
+    </Directory>
+
+    <!-- Files -->
+    <DirectoryRef Id="BINDIR">
+      <Component Id="CodeOllieExe" Guid="*">
+        <File Id="CodeOllieExe" Name="codeollie.exe" Source="..\CodeOllie.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Start Menu shortcuts -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcuts" Guid="*">
+        <Shortcut Id="CodeOllieShortcut" Name="CodeOllie CLI" Description="AI-powered coding assistant" Target="[BINDIR]codeollie.exe" WorkingDirectory="BINDIR" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\CodeOllie" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- PATH environment variable -->
+    <DirectoryRef Id="BINDIR">
+      <Component Id="PathEnv" Guid="*">
+        <Environment Id="PATH" Name="PATH" Value="[BINDIR]" Permanent="no" Part="last" Action="set" System="yes" />
+        <RegistryValue Root="HKLM" Key="Software\CodeOllie" Name="path" Type="string" Value="[BINDIR]" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Features -->
+    <Feature Id="MainFeature" Title="CodeOllie CLI" Level="1">
+      <ComponentRef Id="CodeOllieExe" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="PathEnv" />
+    </Feature>
+  </Product>
+</Wix>

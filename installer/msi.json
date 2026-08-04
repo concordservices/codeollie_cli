@@ -1,0 +1,19 @@
+{
+  "product": "CodeOllie CLI",
+  "version": "1.0.0",
+  "company": "Concord Services Inc.",
+  "license": "LICENSE.txt",
+  "upgrade_code": "d163a3bd-8d80-4f33-a183-b7ddd69e273a",
+  "files": {
+    "include": ["../CodeOllie.exe"]
+  },
+  "shortcuts": {
+    "desktop": [
+      {
+        "name": "CodeOllie CLI",
+        "target": "CodeOllie.exe",
+        "description": "Code with CodeOllie."
+      }
+    ]
+  }
+}

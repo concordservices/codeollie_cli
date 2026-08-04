@@ -1,0 +1,50 @@
+{
+  "name": "@concord/codeollie",
+  "version": "1.0.0",
+  "description": "AI-powered CLI coding assistant supporting OpenAI, Anthropic, Google, DeepSeek, OpenRouter & Hugging Face",
+  "main": "dist/index.js",
+  "bin": {
+    "codeollie": "./bin/codeollie.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "build:exe": "pkg dist/index.js --targets node18-win-x64 --output CodeOllie.exe --compress Brotli",
+    "build:macos": "pkg dist/index.js --targets node18-macos-x64 --output CodeOllie-macos --compress Brotli",
+    "build:linux": "pkg dist/index.js --targets node18-linux-x64 --output CodeOllie-linux --compress Brotli",
+    "build:all": "npm run build && npm run build:exe && npm run build:macos && npm run build:linux",
+    "build:msi": "cd installer && candle CodeOllie.wxs -out CodeOllie.wixobj && light CodeOllie.wixobj -out ..\\CodeOllie.msi -ext WixUtilExtension",
+    "build:pkg": "cd installer && chmod +x build-macos.sh && ./build-macos.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/concordservices/codeolliecli"
+  },
+  "author": "Concord Services",
+  "license": "MIT",
+  "keywords": [
+    "cli",
+    "ai",
+    "coding-assistant",
+    "openai",
+    "anthropic",
+    "gemini",
+    "deepseek",
+    "openrouter",
+    "huggingface"
+  ],
+  "dependencies": {
+    "@types/node": "^26.0.0",
+    "axios": "^1.18.1",
+    "dotenv": "^17.4.2",
+    "keytar": "^7.9.0",
+    "open": "^11.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.44.1",
+    "pkg": "^5.8.1"
+  }
+}
