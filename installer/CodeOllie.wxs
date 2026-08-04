@@ -8,7 +8,7 @@
 
     <!-- Install directory -->
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFiles64Folder">
+      <Directory Id="ProgramFilesFolder">
         <Directory Id="APPLICATIONROOT" Name="CodeOllie">
           <Directory Id="BINDIR" Name="bin" />
         </Directory>
