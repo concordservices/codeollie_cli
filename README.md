@@ -13,25 +13,13 @@ A highly intelligent AI-powered CLI coding assistant that can create and edit fi
 
 ## Installation
 
-### From npm:
-```bash
-npm install -g @concordservices/codeollie
-```
-
-### From GitHub (for developers):
-```bash
-git clone https://github.com/concordservices/codeollie.git
-cd codeollie
-npm install
-npm run build
-npm start --no-auth  # For testing without GitHub auth
-```
-
+Download and run the .msi in the latest stable release on this GitHub repo for Windows
+We are still developing for macOS
 ## Setup
 
 ### First-Run Onboarding
 
-When you run `codeollie` for the first time, you'll be guided through:
+When you run the command `CodeOllie` for the first time, you'll be guided through:
 
 1. **GitHub Authentication** — Authenticate securely with GitHub via Device Flow
 2. **Provider Selection** — Choose from OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, or Hugging Face
@@ -56,7 +44,7 @@ Your configuration is saved to `~/.codeollie/config.json` for future use.
 
 Start the interactive chat:
 ```bash
-codeollie
+CodeOllie
 ```
 
 This will:
@@ -131,22 +119,10 @@ bin/
 └── codeollie.js  # Global CLI entry point
 ```
 
-## Environment Variables
-
-Create a `.env` file (optional, only needed for GitHub Client ID):
-
-```env
-GITHUB_CLIENT_ID=your_github_client_id
-```
-
-The GitHub Client ID is pre-configured for public distribution. API keys are managed through the interactive onboarding.
 
 ## Troubleshooting
 
-### "Cannot find codeollie command"
-```bash
-npm install -g @concordservices/codeollie
-```
+
 
 ### API Key not working
 Delete your config and re-run setup:
@@ -155,12 +131,6 @@ rm ~/.codeollie/config.json
 codeollie
 ```
 
-### Windows PATH Issues
-Ensure the npm global bin directory is in your PATH:
-```powershell
-npm prefix -g  # Shows npm's global directory
-# Add {directory}\bin to your User PATH environment variable
-```
 
 ## License
 
