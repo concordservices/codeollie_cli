@@ -19,7 +19,7 @@ We are still developing for macOS
 
 ### First-Run Onboarding
 
-When you run the command `CodeOllie` for the first time, you'll be guided through:
+When you run the command `codeollie` for the first time, you'll be guided through:
 
 1. **GitHub Authentication** — Authenticate securely with GitHub via Device Flow
 2. **Provider Selection** — Choose from OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, or Hugging Face
@@ -44,7 +44,7 @@ Your configuration is saved to `~/.codeollie/config.json` for future use.
 
 Start the interactive chat:
 ```bash
-CodeOllie
+codeollie
 ```
 
 This will:
