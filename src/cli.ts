@@ -116,8 +116,58 @@ export class CLI {
 
       const action = await this.prompt('\n📝 Create this file? (y/n/cancel): ');
       if (action.toLowerCase() === 'y') {
-        const filePath = await this.prompt('📂 File path: ');
-        await this.fileOps.createFile(filePath, code);
+        let filePath = (await this.prompt('📂 File path: ')).trim();
+        // Normalize common user inputs
+        if (filePath.startsWith('"') && filePath.endsWith('"')) {
+          filePath = filePath.slice(1, -1);
+        }
+        if (filePath.startsWith("'") && filePath.endsWith("'")) {
+          filePath = filePath.slice(1, -1);
+        }
+        // Expand ~ to home
+        if (filePath.startsWith('~')) {
+          filePath = filePath.replace('~', require('os').homedir());
+        }
+
+        const path = require('path');
+        const fs = require('fs');
+
+        let targetIsDir = false;
+        try {
+          // If user entered an existing directory, treat as directory
+          if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+            targetIsDir = true;
+          }
+          // If user input ends with path separator, treat as directory
+          if (filePath.endsWith(path.sep) || filePath.endsWith('/') || filePath.endsWith('\\')) {
+            targetIsDir = true;
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        // If it looks like a directory (user provided folder), ask for filename or infer
+        if (targetIsDir) {
+          let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
+          filename = filename.trim();
+          if (!filename) {
+            // Try to infer filename from code comments or language
+            const inferFromCode = (code.match(/^[#\/\*\s-]*([\w\-._]+\.(py|js|ts|txt|md|json|html|css))/mi) || [])[1];
+            const extMap: any = { python: 'py', py: 'py', javascript: 'js', typescript: 'ts', txt: 'txt' };
+            const inferredExt = extMap[language] || language || 'txt';
+            const inferredName = inferFromCode || `untitled.${inferredExt}`;
+            filename = inferredName;
+            console.log(`ℹ️  Inferred filename: ${filename}`);
+          }
+          // Join directory and filename
+          filePath = path.join(filePath, filename);
+        }
+
+        try {
+          await this.fileOps.createFile(filePath, code);
+        } catch (err) {
+          console.error('\x1b[31m❌ Error: Could not create the file.\x1b[0m', err instanceof Error ? err.message : err);
+        }
       } else if (action.toLowerCase() === 'cancel') {
         break;
       }
