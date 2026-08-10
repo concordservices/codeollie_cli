@@ -206,6 +206,7 @@ export class CLI {
         const fs = require('fs');
 
         let targetIsDir = false;
+        let askedForFilename = false;
         try {
           // Resolve relative paths against cwd so existence checks are accurate
           const resolvedPath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
@@ -224,6 +225,7 @@ export class CLI {
         // If it looks like a directory (user provided folder), ask for filename or infer
         if (targetIsDir) {
           let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
+          askedForFilename = true;
           filename = filename.trim();
           if (!filename) {
             // Try to infer filename from code comments or language
@@ -242,7 +244,7 @@ export class CLI {
           // Defensive check: if given path is a directory (or looks like one), ensure a filename is appended
           const pathLib = require('path');
           try {
-            if ((fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) || filePath.endsWith(pathLib.sep) || filePath.endsWith('/') || filePath.endsWith('\\') || pathLib.basename(filePath) === '') {
+            if (!askedForFilename && ((fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) || filePath.endsWith(pathLib.sep) || filePath.endsWith('/') || filePath.endsWith('\\') || pathLib.basename(filePath) === '')) {
               let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
               filename = filename.trim();
               if (!filename) {
