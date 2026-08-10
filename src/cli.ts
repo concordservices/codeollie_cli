@@ -113,23 +113,32 @@ export class CLI {
     if (trimmed.startsWith('{')) {
       try {
         const obj = JSON.parse(trimmed);
-        if (obj && obj.action === 'create_file' && obj.path && obj.content) {
-          try {
-            await this.fileOps.createFile(obj.path, obj.content);
-            console.log('\x1b[32m✅ Created from JSON action: ' + obj.path + '\x1b[0m');
-            return;
-          } catch (e) {
-            console.error('\x1b[31m❌ Failed to create file from JSON action:\x1b[0m', e instanceof Error ? e.message : e);
+        if (obj && (obj.action === 'create_file' || obj.action === 'edit_file') && obj.path && obj.content) {
+          const actionLabel = obj.action === 'create_file' ? 'Create file' : 'Update file';
+          console.log(`\nDetected action: ${actionLabel}`);
+          console.log(`Path: ${obj.path}\n`);
+
+          const confirm = await this.prompt('\n📝 Execute this action? (y/n/cancel): ');
+          if (confirm.toLowerCase() !== 'y') {
+            console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
             return;
           }
-        }
-        if (obj && obj.action === 'edit_file' && obj.path && obj.content) {
+
+          // Ask for target path, default to provided path
+          let targetPath = (await this.prompt(`📂 File path [${obj.path}]: `)).trim();
+          if (!targetPath) targetPath = obj.path;
+
           try {
-            await this.fileOps.editFile(obj.path, obj.content);
-            console.log('\x1b[32m✅ Updated from JSON action: ' + obj.path + '\x1b[0m');
+            if (obj.action === 'create_file') {
+              await this.fileOps.createFile(targetPath, obj.content);
+              console.log('\x1b[32m✅ Created from JSON action: ' + targetPath + '\x1b[0m');
+            } else {
+              await this.fileOps.editFile(targetPath, obj.content);
+              console.log('\x1b[32m✅ Updated from JSON action: ' + targetPath + '\x1b[0m');
+            }
             return;
           } catch (e) {
-            console.error('\x1b[31m❌ Failed to update file from JSON action:\x1b[0m', e instanceof Error ? e.message : e);
+            console.error('\x1b[31m❌ Failed to perform action from JSON:\x1b[0m', e instanceof Error ? e.message : e);
             return;
           }
         }
@@ -146,9 +155,19 @@ export class CLI {
         if (pathMatch && contentMatch) {
           const p = pathMatch[1].trim();
           const c = contentMatch[1];
+
+          console.log(`\nDetected write_to_file tag\nPath: ${p}\n`);
+          const confirm = await this.prompt('\n📝 Execute this action? (y/n/cancel): ');
+          if (confirm.toLowerCase() !== 'y') {
+            console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
+            return;
+          }
+          let targetPath = (await this.prompt(`📂 File path [${p}]: `)).trim();
+          if (!targetPath) targetPath = p;
+
           try {
-            await this.fileOps.createFile(p, c);
-            console.log('\x1b[32m✅ Created from tag: ' + p + '\x1b[0m');
+            await this.fileOps.createFile(targetPath, c);
+            console.log('\x1b[32m✅ Created from tag: ' + targetPath + '\x1b[0m');
             return;
           } catch (e) {
             console.error('\x1b[31m❌ Failed to create file from tag:\x1b[0m', e instanceof Error ? e.message : e);
