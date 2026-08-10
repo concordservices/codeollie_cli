@@ -1,0 +1,1 @@
+Opinion: CLI behaved as expected for tested scenarios.

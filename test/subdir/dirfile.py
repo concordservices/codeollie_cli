@@ -1,0 +1,1 @@
+print("Directory only file")
