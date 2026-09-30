@@ -14,7 +14,7 @@ A highly intelligent AI-powered CLI coding assistant that can create and edit fi
 ## Installation
 
 Download and run the .msi in the latest stable release on this GitHub repo for Windows.
-We are still developing for macOS and Linux.
+We are still developing The macOS and Linux versions. @sparxthedev
 ## Setup
 
 ### First-Run Onboarding
