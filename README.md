@@ -13,8 +13,10 @@ A highly intelligent AI-powered CLI coding assistant that can create and edit fi
 
 ## Installation
 
-Download and run the .msi in the latest stable release on this GitHub repo for Windows.
-As of now, we only have windows but we are currently working on codeollie for Macos and Linux too. we expect it to release sometime soon...
+Download and run the .msi in the latest stable release on this GitHub repo for Windows and Macos.    (macos version by @sparx_the_dev)
+Note: the Macos repo is relatively new so it may have some bugs... feel free to contact any of us to report a bug!
+Linux version is currently in devlopment now we excpect it to release soon
+
 ## Setup
 
 ### First-Run Onboarding
