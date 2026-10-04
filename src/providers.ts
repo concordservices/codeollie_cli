@@ -54,6 +54,10 @@ export class ProviderClient {
   private model: string;
 
   constructor(config: ProviderConfig) {
+    if (!config.apiKey || config.apiKey.trim() === '') {
+      throw new Error('API key is required and cannot be empty');
+    }
+
     this.provider = config.provider;
     this.apiKey = config.apiKey;
     this.model = config.model;
@@ -89,6 +93,11 @@ export class ProviderClient {
       'Content-Type': 'application/json',
     };
 
+    if (!config.apiKey || config.apiKey.trim() === '') {
+      console.warn('\x1b[33m⚠️  WARNING: API key is empty or missing!\x1b[0m');
+      return headers;
+    }
+
     switch (config.provider) {
       case 'openai':
       case 'deepseek':
@@ -116,6 +125,10 @@ export class ProviderClient {
 
   async generateCode(prompt: string, context: string = ''): Promise<string> {
     try {
+      if (!this.apiKey || this.apiKey.trim() === '') {
+        throw new Error(`API key is missing or empty for ${PROVIDER_NAMES[this.provider]}`);
+      }
+
       const systemPrompt = 'You are CodeOllie, an expert coding assistant. Help users create and edit files. When providing code, wrap it in markdown code blocks with language tags.';
       const userContent = prompt + (context ? `\n\nContext:\n${context}` : '');
 
@@ -135,7 +148,6 @@ export class ProviderClient {
         max_tokens: 4096,
       };
 
-      // Gemini requires query parameter for API key
       const config: any = {};
       if (this.provider === 'gemini') {
         config.params = { key: this.apiKey };
@@ -174,6 +186,11 @@ export class ProviderClient {
   }
 
   static async getAvailableModels(provider: Provider, apiKey: string): Promise<string[]> {
+    if (!apiKey || apiKey.trim() === '') {
+      console.error('\x1b[31m❌ API key is empty.\x1b[0m');
+      return [];
+    }
+
     try {
       switch (provider) {
         case 'openai': {
@@ -210,13 +227,16 @@ export class ProviderClient {
         }
 
         case 'openrouter': {
-          const resp = await axios.get<{ data: Array<{ id: string }> }>('https://openrouter.ai/api/v1/models');
+          const resp = await axios.get<{ data: Array<{ id: string }> }>('https://openrouter.ai/api/v1/models', {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
           return (resp.data.data || []).map((m) => m.id).sort();
         }
 
         case 'huggingface': {
           const resp = await axios.get<Array<{ id: string }>>('https://huggingface.co/api/models', {
             params: { filter: 'text-generation', sort: 'downloads', direction: -1, limit: 100 },
+            headers: { Authorization: `Bearer ${apiKey}` },
           });
           return (resp.data || []).map((m) => m.id);
         }
