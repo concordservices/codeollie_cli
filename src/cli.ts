@@ -198,12 +198,13 @@ export class CLI {
           filePath = filePath.slice(1, -1);
         }
         // Expand ~ to home
-        if (filePath.startsWith('~')) {
-          filePath = filePath.replace('~', require('os').homedir());
-        }
+if (filePath.startsWith('~')) {
+  filePath = path.join(os.homedir(), filePath.slice(1));
+}
 
-        const path = require('path');
-        const fs = require('fs');
+const normalizedPath = path.isAbsolute(filePath)
+  ? filePath
+  : path.resolve(filePath);
 
         let targetIsDir = false;
         let askedForFilename = false;
