@@ -30,7 +30,7 @@ MACOS DISCOVERY & PIPELINES BY: sparx_the_dev
   4. Once the wizard finishes, open a brand-new Terminal window.
   5. Copy, paste, and run this command once to set up your shortcut link:
   
-     echo "alias codeollie='open https://github.com && /Applications/CodeOllie.app/Contents/MacOS/CodeOllie --no-auth'" >> ~/.zshrc && source ~/.zshrc
+     echo "alias codeollie='open https://github.com/concordservices/codeollie_cli && /Applications/CodeOllie.app/Contents/MacOS/CodeOllie --no-auth'" >> ~/.zshrc && source ~/.zshrc
 
   6. Simply type "codeollie" anywhere in your terminal to launch!
 
