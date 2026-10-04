@@ -6,6 +6,12 @@ import { ProviderClient, PROVIDERS, PROVIDER_NAMES } from './providers.js';
 import { FileOperations } from './fileOps.js';
 import { ConfigManager, CodeOllieConfig } from './config.js';
 
+type StructuredAction = {
+  action: 'create_file' | 'edit_file';
+  path: string;
+  content: string;
+};
+
 export class CLI {
   private providerClient: ProviderClient;
   private fileOps: FileOperations;
@@ -106,8 +112,7 @@ export class CLI {
       if (!filename) {
         console.log(`ℹ️  Inferred filename: ${chosenName}`);
       }
-      targetPath = path.join(targetPath, chosenName);
-      return targetPath;
+      return path.join(targetPath, chosenName);
     }
 
     if (targetPath.endsWith(path.sep) || targetPath.endsWith('/') || targetPath.endsWith('\\')) {
@@ -116,11 +121,144 @@ export class CLI {
       if (!filename) {
         console.log(`ℹ️  Inferred filename: ${chosenName}`);
       }
-      targetPath = path.join(targetPath, chosenName);
-      return targetPath;
+      return path.join(targetPath, chosenName);
     }
 
     return targetPath;
+  }
+
+  private extractJsonAction(response: string): StructuredAction | null {
+    const trimmed = response.trim();
+    const firstBrace = trimmed.indexOf('{');
+    const lastBrace = trimmed.lastIndexOf('}');
+
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+      return null;
+    }
+
+    const candidate = trimmed.slice(firstBrace, lastBrace + 1);
+
+    try {
+      const obj = JSON.parse(candidate);
+      if (
+        obj &&
+        (obj.action === 'create_file' || obj.action === 'edit_file') &&
+        typeof obj.path === 'string' &&
+        typeof obj.content === 'string'
+      ) {
+        return {
+          action: obj.action,
+          path: obj.path,
+          content: obj.content,
+        };
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  private async executeStructuredAction(action: StructuredAction): Promise<boolean> {
+    const actionLabel = action.action === 'create_file' ? 'Create file' : 'Update file';
+    console.log(`\nDetected action: ${actionLabel}`);
+    console.log(`Path: ${action.path}\n`);
+
+    const confirm = (await this.prompt('\n📝 Execute this action? (y/n/cancel): ')).trim().toLowerCase();
+    if (confirm !== 'y') {
+      console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
+      return true;
+    }
+
+    let targetPath = (await this.prompt(`📂 File path [${action.path}]: `)).trim();
+    if (!targetPath) targetPath = action.path;
+    targetPath = this.normalizeFilePath(targetPath);
+
+    try {
+      if (action.action === 'create_file') {
+        await this.fileOps.createFile(targetPath, action.content);
+        console.log('\x1b[32m✅ Created from structured action: ' + targetPath + '\x1b[0m');
+      } else {
+        await this.fileOps.editFile(targetPath, action.content);
+        console.log('\x1b[32m✅ Updated from structured action: ' + targetPath + '\x1b[0m');
+      }
+      return true;
+    } catch (e) {
+      console.error('\x1b[31m❌ Failed to perform structured action:\x1b[0m', e instanceof Error ? e.message : e);
+      return true;
+    }
+  }
+
+  private async executeWriteTagAction(response: string): Promise<boolean> {
+    const pathMatch = response.match(/<path>([\s\S]*?)<\/path>/i);
+    const contentMatch = response.match(/<content>([\s\S]*?)<\/content>/i);
+
+    if (!pathMatch || !contentMatch) {
+      return false;
+    }
+
+    const rawPath = pathMatch[1].trim();
+    const content = contentMatch[1];
+
+    console.log(`\nDetected write_to_file tag\nPath: ${rawPath}\n`);
+    const confirm = (await this.prompt('\n📝 Execute this action? (y/n/cancel): ')).trim().toLowerCase();
+    if (confirm !== 'y') {
+      console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
+      return true;
+    }
+
+    let targetPath = (await this.prompt(`📂 File path [${rawPath}]: `)).trim();
+    if (!targetPath) targetPath = rawPath;
+    targetPath = this.normalizeFilePath(targetPath);
+
+    try {
+      await this.fileOps.createFile(targetPath, content);
+      console.log('\x1b[32m✅ Created from tag: ' + targetPath + '\x1b[0m');
+      return true;
+    } catch (e) {
+      console.error('\x1b[31m❌ Failed to create file from tag:\x1b[0m', e instanceof Error ? e.message : e);
+      return true;
+    }
+  }
+
+  private async parseAndExecuteCommand(response: string): Promise<void> {
+    const trimmed = response.trim();
+
+    const jsonAction = this.extractJsonAction(response);
+    if (jsonAction) {
+      const handled = await this.executeStructuredAction(jsonAction);
+      if (handled) {
+        return;
+      }
+    }
+
+    if (trimmed.includes('<write_to_file>')) {
+      const handled = await this.executeWriteTagAction(response);
+      if (handled) {
+        return;
+      }
+    }
+
+    const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = codeBlockRegex.exec(response)) !== null) {
+      const language = match[1] || 'txt';
+      const code = match[2];
+      const action = (await this.prompt('\n📝 Create this file? (y/n/cancel): ')).trim().toLowerCase();
+
+      if (action === 'y') {
+        try {
+          let filePath = (await this.prompt('📂 File path: ')).trim();
+          filePath = await this.resolveTargetFilePath(filePath, code, language);
+          await this.fileOps.createFile(filePath, code);
+        } catch (err) {
+          console.error('\x1b[31m❌ Error: Could not create the file.\x1b[0m', err instanceof Error ? err.message : err);
+        }
+      } else if (action === 'cancel') {
+        break;
+      }
+    }
   }
 
   async handleModelCommand(): Promise<void> {
@@ -151,11 +289,9 @@ export class CLI {
       return;
     }
 
-    // Step 2: Input API key
     const apiKey = await this.prompt(`\nEnter API key for \x1b[36m${PROVIDER_NAMES[selectedProvider]}\x1b[0m: `);
     if (!apiKey.trim()) return;
 
-    // Step 3: Select model
     console.log(`\n\x1b[2mFetching models for ${PROVIDER_NAMES[selectedProvider]}...\x1b[0m`);
     try {
       const models = await ProviderClient.getAvailableModels(selectedProvider, apiKey);
@@ -182,117 +318,18 @@ export class CLI {
       }
 
       const selectedModel = models[modelIndex - 1];
-
       if (!selectedModel) {
         console.log('\x1b[31m❌ Invalid selection.\x1b[0m');
         return;
       }
 
-      // Save config
       await ConfigManager.updateProvider(this.config, selectedProvider, apiKey, selectedModel);
       this.config = (await ConfigManager.loadConfig()) || this.config;
-
-      // Reinitialize provider client
       this.providerClient = new ProviderClient(this.config.activeProvider);
 
       console.log(`\n\x1b[32m✅ Switched to ${PROVIDER_NAMES[selectedProvider]} / ${selectedModel}\x1b[0m\n`);
     } catch (error) {
       console.log(`\x1b[31m❌ Error: ${error instanceof Error ? error.message : 'Failed to fetch models'}\x1b[0m\n`);
-    }
-  }
-
-  private async parseAndExecuteCommand(response: string): Promise<void> {
-    const trimmed = response.trim();
-
-    if (trimmed.startsWith('{')) {
-      try {
-        const obj = JSON.parse(trimmed);
-        if (obj && (obj.action === 'create_file' || obj.action === 'edit_file') && obj.path && obj.content) {
-          const actionLabel = obj.action === 'create_file' ? 'Create file' : 'Update file';
-          console.log(`\nDetected action: ${actionLabel}`);
-          console.log(`Path: ${obj.path}\n`);
-
-          const confirm = await this.prompt('\n📝 Execute this action? (y/n/cancel): ');
-          if (confirm.toLowerCase() !== 'y') {
-            console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
-            return;
-          }
-
-          let targetPath = (await this.prompt(`📂 File path [${obj.path}]: `)).trim();
-          if (!targetPath) targetPath = obj.path;
-          targetPath = this.normalizeFilePath(targetPath);
-
-          try {
-            if (obj.action === 'create_file') {
-              await this.fileOps.createFile(targetPath, obj.content);
-              console.log('\x1b[32m✅ Created from JSON action: ' + targetPath + '\x1b[0m');
-            } else {
-              await this.fileOps.editFile(targetPath, obj.content);
-              console.log('\x1b[32m✅ Updated from JSON action: ' + targetPath + '\x1b[0m');
-            }
-            return;
-          } catch (e) {
-            console.error('\x1b[31m❌ Failed to perform action from JSON:\x1b[0m', e instanceof Error ? e.message : e);
-            return;
-          }
-        }
-      } catch {
-        // fall through to other handlers
-      }
-    }
-
-    if (trimmed.includes('<write_to_file>')) {
-      try {
-        const pathMatch = trimmed.match(/<path>([\s\S]*?)<\/path>/i);
-        const contentMatch = trimmed.match(/<content>([\s\S]*?)<\/content>/i);
-        if (pathMatch && contentMatch) {
-          const p = this.normalizeFilePath(pathMatch[1].trim());
-          const c = contentMatch[1];
-
-          console.log(`\nDetected write_to_file tag\nPath: ${p}\n`);
-          const confirm = await this.prompt('\n📝 Execute this action? (y/n/cancel): ');
-          if (confirm.toLowerCase() !== 'y') {
-            console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
-            return;
-          }
-
-          let targetPath = (await this.prompt(`📂 File path [${p}]: `)).trim();
-          if (!targetPath) targetPath = p;
-          targetPath = this.normalizeFilePath(targetPath);
-
-          try {
-            await this.fileOps.createFile(targetPath, c);
-            console.log('\x1b[32m✅ Created from tag: ' + targetPath + '\x1b[0m');
-            return;
-          } catch (e) {
-            console.error('\x1b[31m❌ Failed to create file from tag:\x1b[0m', e instanceof Error ? e.message : e);
-            return;
-          }
-        }
-      } catch {
-        // ignore and fall through
-      }
-    }
-
-    const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
-    let match: RegExpExecArray | null;
-
-    while ((match = codeBlockRegex.exec(response)) !== null) {
-      const language = match[1] || 'txt';
-      const code = match[2];
-
-      const action = (await this.prompt('\n📝 Create this file? (y/n/cancel): ')).trim().toLowerCase();
-      if (action === 'y') {
-        try {
-          let filePath = await this.prompt('📂 File path: ');
-          filePath = await this.resolveTargetFilePath(filePath, code, language);
-          await this.fileOps.createFile(filePath, code);
-        } catch (err) {
-          console.error('\x1b[31m❌ Error: Could not create the file.\x1b[0m', err instanceof Error ? err.message : err);
-        }
-      } else if (action === 'cancel') {
-        break;
-      }
     }
   }
 
@@ -335,7 +372,6 @@ export class CLI {
         console.log(`\x1b[36mCodeOllie:\x1b[0m ${response}\n`);
 
         await this.parseAndExecuteCommand(response);
-
         this.context += `\nUser: ${userInput}\nAssistant: ${response}`;
       } catch (error) {
         console.error('\x1b[31m❌ Error:\x1b[0m', error instanceof Error ? error.message : 'Unknown error');
