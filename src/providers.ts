@@ -1,4 +1,4 @@
-﻿import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 export type Provider = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'openrouter' | 'huggingface';
 
@@ -72,7 +72,7 @@ export class ProviderClient {
       case 'anthropic':
         return config.baseUrl || 'https://api.anthropic.com/v1';
       case 'gemini':
-        return `https://generativelanguage.googleapis.com/v1beta/openai?key=${config.apiKey}`;
+        return config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta/openai';
       case 'deepseek':
         return config.baseUrl || 'https://api.deepseek.com/v1';
       case 'openrouter':
@@ -97,6 +97,9 @@ export class ProviderClient {
       case 'anthropic':
         headers['x-api-key'] = config.apiKey;
         headers['anthropic-version'] = '2023-06-01';
+        break;
+      case 'gemini':
+        headers['Authorization'] = `Bearer ${config.apiKey}`;
         break;
       case 'openrouter':
         headers['Authorization'] = `Bearer ${config.apiKey}`;
@@ -125,12 +128,20 @@ export class ProviderClient {
         { role: 'user', content: userContent },
       ];
 
-      const response = await this.client.post<LLMResponse>('/chat/completions', {
+      const requestBody: any = {
         model: this.model,
         messages,
         temperature: 0.7,
         max_tokens: 4096,
-      });
+      };
+
+      // Gemini requires query parameter for API key
+      const config: any = {};
+      if (this.provider === 'gemini') {
+        config.params = { key: this.apiKey };
+      }
+
+      const response = await this.client.post<LLMResponse>('/chat/completions', requestBody, config);
 
       if (!response.data.choices || !response.data.choices[0]) {
         throw new Error('Invalid API response format');
@@ -181,7 +192,10 @@ export class ProviderClient {
 
         case 'gemini': {
           const resp = await axios.get<{ models: Array<{ name: string }> }>(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+            'https://generativelanguage.googleapis.com/v1beta/models',
+            {
+              params: { key: apiKey },
+            }
           );
           return (resp.data.models || [])
             .map((m) => m.name.replace('models/', ''))
