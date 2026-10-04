@@ -1,139 +1,107 @@
-# CodeOllie CLI 🎉
+========================================================================
+                          CODEOLLIE CLI 🤖
+========================================================================
+A highly intelligent, cross-platform AI-powered coding assistant that 
+runs right inside your terminal. It creates, views, and edits files 
+directly within your local projects while supporting secure GitHub 
+authentication and dynamic model shifting across multiple AI providers.
 
-A highly intelligent AI-powered CLI coding assistant that can create and edit files in your project. Authenticate with GitHub and get instant coding help with support for multiple AI providers (OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, and Hugging Face).
+VERSION: 0.1.1
+DEVELOPED BY: concordservices
+MACOS DISCOVERY & PIPELINES BY: sparx_the_dev
+========================================================================
 
-## Features
+------------------------------------------------------------------------
+1. INSTALLATION & SHORTCUT SETUP
+------------------------------------------------------------------------
 
-✨ **Multi-Provider AI Support** — OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, Hugging Face  
-🔐 **GitHub Authentication** — Secure OAuth login via browser (Device Flow)  
-📝 **File Management** — Create and edit files with intelligent suggestions  
-💬 **Interactive Chat** — Multi-turn conversation with context awareness  
-⚙️ **Dynamic Model Selection** — Switch models with `/model` command  
-🚀 **Easy Setup** — First-run onboarding guides you through provider setup  
+🍏 APPLE macOS (macOS 15 through macOS 27+)
+===========================================
+  1. Open your web browser and go to the official project releases page.
+  2. Download the installer file: CodeOllie-1.0.0.pkg
+  3. Double-click the file to open the official installation wizard.
+  
+  * SECURITY BYPASS NOTE FOR macOS 27+: 
+    If a warning pops up saying the package cannot be opened because it 
+    is from an unidentified developer, click Cancel. Open your Mac's 
+    System Settings -> Privacy & Security. Scroll down to the Security 
+    section and click the "Open Anyway" button, then enter your password.
 
-## Installation
+  4. Once the wizard finishes, open a brand-new Terminal window.
+  5. Copy, paste, and run this command once to set up your shortcut link:
+  
+     echo "alias codeollie='open https://github.com && /Applications/CodeOllie.app/Contents/MacOS/CodeOllie --no-auth'" >> ~/.zshrc && source ~/.zshrc
 
-Download and run the .msi in the latest stable release on this GitHub repo for Windows and Macos.    (macos version by @sparx_the_dev)
-Note: the Macos repo is relatively new so it may have some bugs... feel free to contact any of us to report a bug!
-Linux version is currently in devlopment now we excpect it to release soon
-
-## Setup
-
-### First-Run Onboarding
-
-When you run the command `codeollie` for the first time, you'll be guided through:
-
-1. **GitHub Authentication** — Authenticate securely with GitHub via Device Flow
-2. **Provider Selection** — Choose from OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, or Hugging Face
-3. **API Key Setup** — Enter your API key for the selected provider
-4. **Model Selection** — Pick a compatible model for your provider
-
-Your configuration is saved to `~/.codeollie/config.json` for future use.
-
-### Supported Providers
-
-| Provider | Models | Notes |
-|----------|--------|-------|
-| **OpenRouter** | Nemotron 3 Ultra, GPT-4, Claude 3 | Proxy for multiple models |
-| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-3.5 Turbo | Direct OpenAI API |
-| **NVIDIA NIM** | Nemotron 3 Ultra, 70B | NVIDIA's model inference |
-| **Google Gemini** | Gemini Pro, Gemini Pro Vision | Google's latest models |
-| **Hugging Face** | SGM-1 (custom MoE) | Custom spaces and endpoints |
-
-## Usage
-
-### Basic Commands
-
-Start the interactive chat:
-```bash
-codeollie
-```
-
-This will:
-1. 🔐 Authenticate with GitHub (if needed)
-2. 💬 Start an interactive chat interface
-3. 📝 Help you create and edit files
-
-### Slash Commands
-
-Inside the CodeOllie chat, use slash commands:
-
-- **`/model`** — Opens the model selection menu to switch providers/models
-- **`exit`** — Quit the chat
-
-### Example Interactions
-
-```
-CodeOllie [sgm-1] ❯ Create a React component for user authentication
-CodeOllie [gpt-4] ❯ /model
-CodeOllie [gpt-4-turbo] ❯ Generate a REST API with Express
-```
-
-## Configuration
-
-Your config is stored at `~/.codeollie/config.json`:
-
-```json
-{
-  "activeProvider": {
-    "provider": "huggingface",
-    "apiKey": "hf_...",
-    "model": "sgm-1"
-  },
-  "providers": {
-    "huggingface": {
-      "provider": "huggingface",
-      "apiKey": "hf_...",
-      "model": "sgm-1"
-    }
-  }
-}
-```
-
-### Custom Hugging Face Endpoints
-
-For custom Hugging Face spaces, update the config file with your endpoint URL:
-
-```json
-{
-  "activeProvider": {
-    "provider": "huggingface",
-    "apiKey": "hf_token",
-    "model": "your-model-name",
-    "baseUrl": "https://your-username-your-space-name.hf.space/v1"
-  }
-}
-```
-
-## Project Structure
-
-```
-src/
-├── index.ts      # Entry point & initialization
-├── auth.ts       # GitHub OAuth Device Flow authentication
-├── providers.ts  # Multi-provider LLM client
-├── config.ts     # Config file management
-├── fileOps.ts    # File create/edit operations
-└── cli.ts        # Interactive CLI interface with slash commands
-dist/
-└── (compiled JavaScript files)
-bin/
-└── codeollie.js  # Global CLI entry point
-```
+  6. Simply type "codeollie" anywhere in your terminal to launch!
 
 
-## Troubleshooting
+🐧 LINUX SYSTEMS (Ubuntu, Debian, DietPi, etc.)
+==============================================
+  [ IN DEVELOPMENT ]
+  The native Linux standalone application binary and automated setup 
+  packages are currently being built. We expect the universal Linux 
+  edition to release very soon! Stay tuned to the repository updates.
 
 
-
-### API Key not working
-Delete your config and re-run setup:
-```bash
-rm ~/.codeollie/config.json
-codeollie
-```
+🪟 MICROSOFT WINDOWS OS (64-bit systems)
+========================================
+  Download and execute the "CodeOllie.msi" installer package from the 
+  latest stable release assets on the GitHub page. Follow the setup 
+  prompts to register the global system path automatically.
 
 
-## License
+------------------------------------------------------------------------
+2. CORE FEATURES & COMMANDS
+------------------------------------------------------------------------
 
-MIT
+BASIC USAGE:
+============
+To use the AI agent on a project repository, open your terminal, navigate
+into the targeted codebase folder, and fire it up:
+
+    cd /path/to/your/project-folder
+    codeollie
+
+Once running, you can speak directly to the assistant in natural language.
+For example:
+  - "Create a new React component for user authentication."
+  - "Review index.js and help me fix any logic performance issues."
+  - "Generate an absolute path configuration file."
+
+INTERACTIVE SLASH COMMANDS:
+===========================
+Inside the CodeOllie terminal chat window, use these commands to control
+the underlying environment:
+
+  /model  - Opens a setup menu to swap AI providers or modify model sizes.
+  exit    - Shuts down the agent session safely and returns to local shell.
+
+
+------------------------------------------------------------------------
+3. SUPPORTED AI PROVIDERS
+------------------------------------------------------------------------
+CodeOllie works seamlessly with five major external environments:
+
+  * OpenRouter  - Gateway proxy for Nemotron 3 Ultra, GPT-4, and Claude.
+  * OpenAI      - Direct interaction with native GPT models.
+  * NVIDIA NIM  - Fast inference configurations for Nemotron targets.
+  * Google      - Integration for Gemini Pro and Vision models.
+  * Hugging Face- Native support for custom endpoint spaces (SGM-1 MoE).
+
+
+------------------------------------------------------------------------
+4. TROUBLESHOOTING CONFIGURATIONS
+------------------------------------------------------------------------
+Your system configuration settings are securely stored locally inside a 
+hidden user directory located at: ~/.codeollie/config.json
+
+If your API key breaks, if you change accounts, or if you encounter an 
+unresponsive setup prompt, completely wipe the old data footprint and 
+re-run onboarding using this terminal line:
+
+    rm ~/.codeollie/config.json && codeollie
+
+------------------------------------------------------------------------
+LICENSE: MIT
+========================================================================
+
