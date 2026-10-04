@@ -1,5 +1,8 @@
 import * as readline from 'readline';
-import { ProviderClient, Provider, PROVIDERS, PROVIDER_NAMES } from './providers.js';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { ProviderClient, PROVIDERS, PROVIDER_NAMES } from './providers.js';
 import { FileOperations } from './fileOps.js';
 import { ConfigManager, CodeOllieConfig } from './config.js';
 
@@ -32,12 +35,92 @@ export class CLI {
     const width = 75;
     const title = ' CodeOllie CLI v1.0.0 ';
     const padding = '─'.repeat((width - title.length) / 2);
-    
+
     console.log(`\x1b[2m╭${padding}${title}${padding}╮\x1b[0m`);
     const statusLine = ` Active Model: \x1b[36m${this.config.activeProvider.model}\x1b[2m | Provider: ${PROVIDER_NAMES[this.config.activeProvider.provider]} `;
     const spacer = ' '.repeat(Math.max(0, width - statusLine.replace(/\x1b\[[0-9;]*m/g, '').length));
     console.log(`\x1b[2m│${statusLine}${spacer}│\x1b[0m`);
     console.log(`\x1b[2m╰${'─'.repeat(width)}╯\x1b[0m\n`);
+  }
+
+  private getChoice(input: string, max: number): number | null {
+    const value = Number.parseInt(input.trim(), 10);
+    if (!Number.isInteger(value) || value < 1 || value > max) {
+      return null;
+    }
+    return value;
+  }
+
+  private normalizeFilePath(filePath: string): string {
+    let normalized = filePath.trim();
+
+    if ((normalized.startsWith('"') && normalized.endsWith('"')) || (normalized.startsWith("'") && normalized.endsWith("'"))) {
+      normalized = normalized.slice(1, -1);
+    }
+
+    if (normalized.startsWith('~')) {
+      normalized = path.join(os.homedir(), normalized.slice(1));
+    }
+
+    return normalized;
+  }
+
+  private inferFilenameFromCode(code: string, language: string): string {
+    const inferredFromComment = (code.match(/^[#\/\*\s-]*([\w\-._]+\.(py|js|ts|tsx|jsx|txt|md|json|html|css|yaml|yml))/mi) || [])[1];
+    const extMap: Record<string, string> = {
+      python: 'py',
+      py: 'py',
+      javascript: 'js',
+      js: 'js',
+      typescript: 'ts',
+      ts: 'ts',
+      jsx: 'jsx',
+      tsx: 'tsx',
+      txt: 'txt',
+      text: 'txt',
+      markdown: 'md',
+      md: 'md',
+      json: 'json',
+      html: 'html',
+      css: 'css',
+      yaml: 'yaml',
+      yml: 'yml',
+    };
+
+    const inferredExt = extMap[(language || '').toLowerCase()] || language || 'txt';
+    return inferredFromComment || `untitled.${inferredExt}`;
+  }
+
+  private async resolveTargetFilePath(rawPath: string, code: string, language: string): Promise<string> {
+    let targetPath = this.normalizeFilePath(rawPath);
+
+    if (!targetPath) {
+      throw new Error('A file path is required.');
+    }
+
+    const resolvedPath = path.isAbsolute(targetPath) ? targetPath : path.resolve(targetPath);
+
+    if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory()) {
+      const filename = (await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ')).trim();
+      const chosenName = filename || this.inferFilenameFromCode(code, language);
+      if (!filename) {
+        console.log(`ℹ️  Inferred filename: ${chosenName}`);
+      }
+      targetPath = path.join(targetPath, chosenName);
+      return targetPath;
+    }
+
+    if (targetPath.endsWith(path.sep) || targetPath.endsWith('/') || targetPath.endsWith('\\')) {
+      const filename = (await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ')).trim();
+      const chosenName = filename || this.inferFilenameFromCode(code, language);
+      if (!filename) {
+        console.log(`ℹ️  Inferred filename: ${chosenName}`);
+      }
+      targetPath = path.join(targetPath, chosenName);
+      return targetPath;
+    }
+
+    return targetPath;
   }
 
   async handleModelCommand(): Promise<void> {
@@ -53,8 +136,15 @@ export class CLI {
     });
 
     const providerChoice = await this.prompt('\n\x1b[2mSelect provider (1-6):\x1b[0m ');
-    if (!providerChoice.trim()) return; // Handle Ctrl+D
-    const selectedProvider = PROVIDERS[parseInt(providerChoice) - 1];
+    if (!providerChoice.trim()) return;
+
+    const providerIndex = this.getChoice(providerChoice, PROVIDERS.length);
+    if (providerIndex === null) {
+      console.log('\x1b[31m❌ Invalid selection.\x1b[0m');
+      return;
+    }
+
+    const selectedProvider = PROVIDERS[providerIndex - 1];
 
     if (!selectedProvider) {
       console.log('\x1b[31m❌ Invalid selection.\x1b[0m');
@@ -63,13 +153,13 @@ export class CLI {
 
     // Step 2: Input API key
     const apiKey = await this.prompt(`\nEnter API key for \x1b[36m${PROVIDER_NAMES[selectedProvider]}\x1b[0m: `);
-    if (!apiKey.trim()) return; // Handle Ctrl+D
+    if (!apiKey.trim()) return;
 
     // Step 3: Select model
     console.log(`\n\x1b[2mFetching models for ${PROVIDER_NAMES[selectedProvider]}...\x1b[0m`);
     try {
       const models = await ProviderClient.getAvailableModels(selectedProvider, apiKey);
-      
+
       if (models.length === 0) {
         console.log('\x1b[33m⚠️  No models available for this provider.\x1b[0m');
         return;
@@ -83,9 +173,15 @@ export class CLI {
       });
 
       const modelChoice = await this.prompt('\n\x1b[2mSelect model (1-' + models.length + '):\x1b[0m ');
-      if (!modelChoice.trim()) return; // Handle Ctrl+D
-      
-      const selectedModel = models[parseInt(modelChoice) - 1];
+      if (!modelChoice.trim()) return;
+
+      const modelIndex = this.getChoice(modelChoice, models.length);
+      if (modelIndex === null) {
+        console.log('\x1b[31m❌ Invalid selection.\x1b[0m');
+        return;
+      }
+
+      const selectedModel = models[modelIndex - 1];
 
       if (!selectedModel) {
         console.log('\x1b[31m❌ Invalid selection.\x1b[0m');
@@ -106,10 +202,8 @@ export class CLI {
   }
 
   private async parseAndExecuteCommand(response: string): Promise<void> {
-    // Accept structured JSON actions or xml-like tags in addition to markdown code blocks.
     const trimmed = response.trim();
 
-    // 1) JSON action support: { "action": "create_file", "path": "...", "content": "..." }
     if (trimmed.startsWith('{')) {
       try {
         const obj = JSON.parse(trimmed);
@@ -124,9 +218,9 @@ export class CLI {
             return;
           }
 
-          // Ask for target path, default to provided path
           let targetPath = (await this.prompt(`📂 File path [${obj.path}]: `)).trim();
           if (!targetPath) targetPath = obj.path;
+          targetPath = this.normalizeFilePath(targetPath);
 
           try {
             if (obj.action === 'create_file') {
@@ -142,18 +236,17 @@ export class CLI {
             return;
           }
         }
-      } catch (e) {
-        // not JSON or parse error - fall through to markdown parsing
+      } catch {
+        // fall through to other handlers
       }
     }
 
-    // 2) Simple XML-like tag support: <write_to_file><path>...</path><content>...</content></write_to_file>
     if (trimmed.includes('<write_to_file>')) {
       try {
         const pathMatch = trimmed.match(/<path>([\s\S]*?)<\/path>/i);
         const contentMatch = trimmed.match(/<content>([\s\S]*?)<\/content>/i);
         if (pathMatch && contentMatch) {
-          const p = pathMatch[1].trim();
+          const p = this.normalizeFilePath(pathMatch[1].trim());
           const c = contentMatch[1];
 
           console.log(`\nDetected write_to_file tag\nPath: ${p}\n`);
@@ -162,8 +255,10 @@ export class CLI {
             console.log('\x1b[33m⚠️  Action cancelled by user.\x1b[0m');
             return;
           }
+
           let targetPath = (await this.prompt(`📂 File path [${p}]: `)).trim();
           if (!targetPath) targetPath = p;
+          targetPath = this.normalizeFilePath(targetPath);
 
           try {
             await this.fileOps.createFile(targetPath, c);
@@ -174,99 +269,28 @@ export class CLI {
             return;
           }
         }
-      } catch (e) {
+      } catch {
         // ignore and fall through
       }
     }
 
-    // 3) Fallback: extract markdown code blocks as before
-    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    let match;
+    const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
+    let match: RegExpExecArray | null;
 
     while ((match = codeBlockRegex.exec(response)) !== null) {
       const language = match[1] || 'txt';
       const code = match[2];
 
-      const action = await this.prompt('\n📝 Create this file? (y/n/cancel): ');
-      if (action.toLowerCase() === 'y') {
-        let filePath = (await this.prompt('📂 File path: ')).trim();
-        // Normalize common user inputs
-        if (filePath.startsWith('"') && filePath.endsWith('"')) {
-          filePath = filePath.slice(1, -1);
-        }
-        if (filePath.startsWith("'") && filePath.endsWith("'")) {
-          filePath = filePath.slice(1, -1);
-        }
-        // Expand ~ to home
-if (filePath.startsWith('~')) {
-  filePath = path.join(os.homedir(), filePath.slice(1));
-}
-
-const normalizedPath = path.isAbsolute(filePath)
-  ? filePath
-  : path.resolve(filePath);
-
-        let targetIsDir = false;
-        let askedForFilename = false;
+      const action = (await this.prompt('\n📝 Create this file? (y/n/cancel): ')).trim().toLowerCase();
+      if (action === 'y') {
         try {
-          // Resolve relative paths against cwd so existence checks are accurate
-          const resolvedPath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
-          // If user entered an existing directory, treat as directory
-          if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory()) {
-            targetIsDir = true;
-          }
-          // If user input ends with path separator, treat as directory
-          if (filePath.endsWith(path.sep) || filePath.endsWith('/') || filePath.endsWith('\\')) {
-            targetIsDir = true;
-          }
-        } catch (e) {
-          // ignore
-        }
-
-        // If it looks like a directory (user provided folder), ask for filename or infer
-        if (targetIsDir) {
-          let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
-          askedForFilename = true;
-          filename = filename.trim();
-          if (!filename) {
-            // Try to infer filename from code comments or language
-            const inferFromCode = (code.match(/^[#\/\*\s-]*([\w\-._]+\.(py|js|ts|txt|md|json|html|css))/mi) || [])[1];
-            const extMap: any = { python: 'py', py: 'py', javascript: 'js', typescript: 'ts', txt: 'txt' };
-            const inferredExt = extMap[language] || language || 'txt';
-            const inferredName = inferFromCode || `untitled.${inferredExt}`;
-            filename = inferredName;
-            console.log(`ℹ️  Inferred filename: ${filename}`);
-          }
-          // Join directory and filename
-          filePath = path.join(filePath, filename);
-        }
-
-        try {
-          // Defensive check: if given path is a directory (or looks like one), ensure a filename is appended
-          const pathLib = require('path');
-          try {
-            if (!askedForFilename && ((fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) || filePath.endsWith(pathLib.sep) || filePath.endsWith('/') || filePath.endsWith('\\') || pathLib.basename(filePath) === '')) {
-              let filename = await this.prompt('📄 Filename to create inside the directory (leave empty to infer): ');
-              filename = filename.trim();
-              if (!filename) {
-                const inferFromCode = (code.match(/^[#\/\*\s-]*([\w\-._]+\.(py|js|ts|txt|md|json|html|css))/mi) || [])[1];
-                const extMap: any = { python: 'py', py: 'py', javascript: 'js', typescript: 'ts', txt: 'txt' };
-                const inferredExt = extMap[language] || language || 'txt';
-                const inferredName = inferFromCode || `untitled.${inferredExt}`;
-                filename = inferredName;
-                console.log(`ℹ️  Inferred filename: ${filename}`);
-              }
-              filePath = pathLib.join(filePath, filename);
-            }
-          } catch (e) {
-            // ignore detection errors and proceed
-          }
-
+          let filePath = await this.prompt('📂 File path: ');
+          filePath = await this.resolveTargetFilePath(filePath, code, language);
           await this.fileOps.createFile(filePath, code);
         } catch (err) {
           console.error('\x1b[31m❌ Error: Could not create the file.\x1b[0m', err instanceof Error ? err.message : err);
         }
-      } else if (action.toLowerCase() === 'cancel') {
+      } else if (action === 'cancel') {
         break;
       }
     }
@@ -274,12 +298,13 @@ const normalizedPath = path.isAbsolute(filePath)
 
   async start(): Promise<void> {
     this.printHeader();
-    
+
     console.log('Welcome to CodeOllie!');
     console.log('');
     console.log('Run /model to choose your model compatible with your API Key and CodeOllie.');
     console.log('');
-    console.log('Note: You are paying for using CodeOllie. The money will be charged to your API key provider\'s account (paid via your account on their website) unless you are using a free model on your account.\n');
+    console.log('Note: You are paying for using CodeOllie. The money will be charged to your API key provider\'s account (paid via your account on their website) unless you are using a free model on your provider.');
+    console.log('');
 
     while (true) {
       const userInput = await this.prompt(`\x1b[36mCodeOllie [\x1b[0m${this.config.activeProvider.model}\x1b[36m] ❯\x1b[0m `);
