@@ -66,6 +66,8 @@ For example:
   - "Review index.js and help me fix any logic performance issues."
   - "Generate an absolute path configuration file."
 
+**This tool can be used for beginners because it supports only single-completion tasks, and it is not autonomous, meaning it will create one file at a time and not a entire directory.**
+
 INTERACTIVE SLASH COMMANDS:
 ===========================
 Inside the CodeOllie terminal chat window, use these commands to control
