@@ -5,11 +5,8 @@ runs right inside your terminal. It creates, views, and edits files
 directly within your local projects while supporting secure GitHub 
 authentication and dynamic model shifting across multiple AI providers.
 
-VERSION: 0.1.1
-WINDOWS VERSION DEVELOPED BY: 
-Sai Veligaram(concordservices)
-MACOS DISCOVERY & PIPELINES BY: 
-sparx_the_dev
+**Developed by Sai Veligaram (concordservices)**
+**and sparx_the_dev**
 ========================================================================
 
 ------------------------------------------------------------------------
