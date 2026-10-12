@@ -1,13 +1,12 @@
-========================================================================
-                          CODEOLLIE CLI 🤖
-========================================================================
+**CodeOllie CLI🤖**
+                          
 A highly intelligent, cross-platform AI-powered coding assistant that 
 runs right inside your terminal. It creates, views, and edits files 
 directly within your local projects while supporting secure GitHub 
 authentication and dynamic model shifting across multiple AI providers.
 
 VERSION: 0.1.1
-DEVELOPED BY: concordservices
+WINDOWS VERSION DEVELOPED BY: Sai Veligaram(concordservices)
 MACOS DISCOVERY & PIPELINES BY: sparx_the_dev
 ========================================================================
 
@@ -18,7 +17,7 @@ MACOS DISCOVERY & PIPELINES BY: sparx_the_dev
 🍏 APPLE macOS (macOS 15 through macOS 27+)
 ===========================================
   1. Open your web browser and go to the official project releases page.
-  2. Download the installer file: CodeOllie-1.0.0.pkg
+  2. Download the installer file: CodeOllieCLI_Setup-1.0.0.pkg
   3. Double-click the file to open the official installation wizard.
   
   * SECURITY BYPASS NOTE FOR macOS 27+: 
@@ -45,7 +44,7 @@ MACOS DISCOVERY & PIPELINES BY: sparx_the_dev
 
 🪟 MICROSOFT WINDOWS OS (64-bit systems)
 ========================================
-  Download and execute the "CodeOllie.msi" installer package from the 
+  Download and execute the "CodeOllieCLISetup-64bit-0.1.1.msi" installer package from the 
   latest stable release assets on the GitHub page. Follow the setup 
   prompts to register the global system path automatically.
 
@@ -73,8 +72,9 @@ INTERACTIVE SLASH COMMANDS:
 Inside the CodeOllie terminal chat window, use these commands to control
 the underlying environment:
 
-  /model  - Opens a setup menu to swap AI providers or modify model sizes.
-  exit    - Shuts down the agent session safely and returns to local shell.
+  _/model_  - Opens a setup menu to swap AI providers or modify model sizes.
+  _exit_    - Shuts down the agent session safely and returns to local shell.
+  _Ctrl+D_  - Same function as _exit_
 
 
 ------------------------------------------------------------------------
