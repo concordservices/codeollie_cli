@@ -1,4 +1,4 @@
-name: Build Windows installer
+name: Build Windows installer for CodeOllie
 
 on:
   workflow_dispatch:
