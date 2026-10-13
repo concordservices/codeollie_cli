@@ -36,10 +36,17 @@ authentication and dynamic model shifting across multiple AI providers.
 
 🐧 LINUX SYSTEMS (Ubuntu, Debian, DietPi, etc.)
 ==============================================
-  [ IN DEVELOPMENT ]
-  The native Linux standalone application binary and automated setup 
-  packages are currently being built. We expect the universal Linux 
-  edition to release very soon! Stay tuned to the repository updates.
+  [ NOW AVAILABLE! ]
+  The universal 64-bit Linux standalone application binary and setup 
+  tarball package have been released. Download `CodeOllie-linux-x64.tar.gz` 
+  from the releases page and run the install script.
+
+
+🖥️ GOOGLE CHROMEOS & ALUMINIUMOS (Linux Environment)
+=====================================================
+  [ NOW AVAILABLE! ]
+  Pull the universal distribution package directly via `wget` and execute 
+  the setup script inside your Linux terminal container.
 
 
 🪟 MICROSOFT WINDOWS OS (64-bit systems)
@@ -48,10 +55,6 @@ authentication and dynamic model shifting across multiple AI providers.
   release assets. The setup wizard displays installation progress and
   confirms when installation is complete.
 
-  To build the installer from source, install Inno Setup 6 and run
-  "installer\build-setup.bat" on Windows. The generated installer is
-  written to the repository root as "CodeOllie-Setup-64bit.exe".
-
 
 ------------------------------------------------------------------------
 2. CORE FEATURES & COMMANDS
@@ -59,61 +62,30 @@ authentication and dynamic model shifting across multiple AI providers.
 
 BASIC USAGE:
 ============
-To use the AI agent on a project repository, open your terminal, navigate
-into the targeted codebase folder, and fire it up:
-
+Navigate into your targeted codebase folder and fire it up:
     cd /path/to/your/project-folder
     codeollie
 
-Once running, you can speak directly to the assistant in natural language.
-For example:
-  - "Create a new React component for user authentication."
-  - "Review index.js and help me fix any logic performance issues."
-  - "Generate an absolute path configuration file."
-
-**This tool can be used for beginners because it supports only single-completion tasks, and it is not autonomous, meaning it will create one file at a time and not a entire directory.**
+Speak directly to the assistant in natural language to create, review, or edit files.
 
 INTERACTIVE SLASH COMMANDS:
 ===========================
-Inside the CodeOllie terminal chat window, use these commands to control
-the underlying environment:
-
   _/model_  - Opens a setup menu to swap AI providers or modify model sizes.
   _exit_    - Shuts down the agent session safely and returns to local shell.
   _Ctrl+D_  - Same function as _exit_
 
 
 ------------------------------------------------------------------------
-3. SIGN-IN
+3. SIGN-IN & SUPPORTED AI PROVIDERS
 ------------------------------------------------------------------------
-CodeOllie signs in with GitHub using the GitHub Device Flow. Its public
-OAuth Client ID is included, so users do not need to configure one. To use
-a different OAuth App, set `GITHUB_CLIENT_ID` in your shell environment.
-Use `--no-auth` to skip sign-in.
+CodeOllie uses GitHub Device Flow for authentication (use `--no-auth` to skip). 
+It supports OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, and Hugging Face.
 
 
 ------------------------------------------------------------------------
-4. SUPPORTED AI PROVIDERS
+4. TROUBLESHOOTING CONFIGURATIONS
 ------------------------------------------------------------------------
-CodeOllie works seamlessly with five major external environments:
-
-  * OpenRouter  - Gateway proxy for Nemotron 3 Ultra, GPT-4, and Claude.
-  * OpenAI      - Direct interaction with native GPT models.
-  * NVIDIA NIM  - Fast inference configurations for Nemotron targets.
-  * Google      - Integration for Gemini Pro and Vision models.
-  * Hugging Face- Native support for custom endpoint spaces (SGM-1 MoE).
-
-
-------------------------------------------------------------------------
-5. TROUBLESHOOTING CONFIGURATIONS
-------------------------------------------------------------------------
-Your system configuration settings are securely stored locally inside a 
-hidden user directory located at: ~/.codeollie/config.json
-
-If your API key breaks, if you change accounts, or if you encounter an 
-unresponsive setup prompt, completely wipe the old data footprint and 
-re-run onboarding using this terminal line:
-
+Configuration settings are stored at `~/.codeollie/config.json`. Wipe and re-run onboarding using:
     rm ~/.codeollie/config.json && codeollie
 
 ------------------------------------------------------------------------
