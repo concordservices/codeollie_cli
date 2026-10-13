@@ -37,7 +37,6 @@
   "dependencies": {
     "@types/node": "^26.0.0",
     "axios": "^1.18.1",
-    "dotenv": "^17.4.2",
     "keytar": "^7.9.0",
     "open": "^11.0.0",
     "ts-node": "^10.9.2",

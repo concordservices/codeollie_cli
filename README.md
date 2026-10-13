@@ -2,8 +2,8 @@
                           
 A highly intelligent, cross-platform AI-powered coding assistant that 
 runs right inside your terminal. It creates, views, and edits files 
-directly within your local projects while supporting secure GitHub 
-or Google sign-in and dynamic model shifting across multiple AI providers.
+directly within your local projects while supporting secure GitHub
+authentication and dynamic model shifting across multiple AI providers.
 
 **Developed by Sai Veligaram (concordservices)**
 **and sparx_the_dev**
@@ -79,27 +79,11 @@ the underlying environment:
 
 
 ------------------------------------------------------------------------
-3. SIGN-IN OPTIONS
+3. SIGN-IN
 ------------------------------------------------------------------------
-When CodeOllie starts, choose one of the sign-in options:
-
-  1. Sign in with Google
-  2. Sign in with GitHub
-
-GitHub remains available through the GitHub Device Flow. To enable Google
-sign-in, create an OAuth client ID with the "Desktop app" application type
-in Google Cloud Console, configure the OAuth consent screen, and set the
-client ID in the environment:
-
-    GOOGLE_CLIENT_ID=your-google-oauth-client-id
-
-Place that value in a `.env` file in the directory where you run CodeOllie.
-Google sign-in requests only the basic profile and email scopes. It is used
-for CodeOllie identity sign-in; the Gemini provider still requires its own
-Google AI API key.
-
-To sign in again, run `codeollie auth` and select an option. To remove a
-stored Google sign-in token, run `codeollie logout --auth-provider google`.
+CodeOllie signs in with GitHub using the GitHub Device Flow. Its public
+OAuth Client ID is included, so users do not need to configure one. To use
+a different OAuth App, set `GITHUB_CLIENT_ID` in your shell environment.
 Use `--no-auth` to skip sign-in.
 
 
