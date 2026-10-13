@@ -5,3 +5,7 @@ dist/
 *.exe
 *.node
 .DS_Store
+CodeOllie-macos
+CodeOllie-linux
+build-setup.bat
+CodeOllie.iss
