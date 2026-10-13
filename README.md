@@ -43,9 +43,13 @@ authentication and dynamic model shifting across multiple AI providers.
 
 🪟 MICROSOFT WINDOWS OS (64-bit systems)
 ========================================
-  Download and execute the "CodeOllieCLISetup-64bit-0.1.1.msi" installer package from the 
-  latest stable release assets on the GitHub page. Follow the setup 
-  prompts to register the global system path automatically.
+  Download and run "CodeOllie-Setup-64bit.exe" from the latest stable
+  release assets. The setup wizard displays installation progress and
+  confirms when installation is complete.
+
+  To build the installer from source, install Inno Setup 6 and run
+  "installer\build-setup.bat" on Windows. The generated installer is
+  written to the repository root as "CodeOllie-Setup-64bit.exe".
 
 
 ------------------------------------------------------------------------

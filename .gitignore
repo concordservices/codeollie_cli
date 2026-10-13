@@ -9,3 +9,6 @@ CodeOllie-macos
 CodeOllie-linux
 build-setup.bat
 CodeOllie.iss
+
+!installer/CodeOllie.iss
+!installer/build-setup.bat

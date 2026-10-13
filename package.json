@@ -14,6 +14,7 @@
     "build:macos": "pkg dist/index.js --targets node18-macos-x64 --output CodeOllie-macos --compress Brotli",
     "build:linux": "pkg dist/index.js --targets node18-linux-x64 --output CodeOllie-linux --compress Brotli",
     "build:all": "npm run build && npm run build:exe && npm run build:macos && npm run build:linux",
+    "build:setup": "installer\\build-setup.bat",
     "build:msi": "cd installer && candle CodeOllie.wxs -out CodeOllie.wixobj && light CodeOllie.wixobj -out ..\\CodeOllie.msi -ext WixUtilExtension",
     "build:pkg": "cd installer && chmod +x build-macos.sh && ./build-macos.sh"
   },
