@@ -8,6 +8,7 @@ authentication and dynamic model shifting across multiple AI providers.
 
 **Developed by Sai Veligaram (concordservices)**
 **and sparx_the_dev**
+checkout https://docs.google.com/document/d/14phvkD633No-YzX_Qm48MmGqqQbNjUqlGr3Ai4x_ucQ/edit?tab=t.0 to learn more about codeollie's capabilites 
 ========================================================================
 
 ------------------------------------------------------------------------
