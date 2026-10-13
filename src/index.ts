@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
 import * as readline from 'readline';
-import { GitHubAuth } from './auth.js';
+import { GitHubAuth, GoogleAuth } from './auth.js';
 import { ProviderClient, PROVIDERS, PROVIDER_NAMES } from './providers.js';
 import { FileOperations } from './fileOps.js';
 import { CLI } from './cli.js';
@@ -19,15 +19,18 @@ try {
 dotenv.config();
 
 const SERVICE_NAME = 'codeollie';
-const SERVICE_ACCOUNT = 'github';
 const FALLBACK_DIR = path.join(os.homedir(), '.codeollie');
-const FALLBACK_TOKEN_FILE = path.join(FALLBACK_DIR, 'token');
+type AuthProvider = 'github' | 'google';
 
-async function getStoredToken(): Promise<string | null> {
+function getFallbackTokenFile(provider: AuthProvider): string {
+  return path.join(FALLBACK_DIR, provider === 'github' ? 'token' : 'google-token');
+}
+
+async function getStoredToken(provider: AuthProvider): Promise<string | null> {
   // Try keytar first, fall back to file storage
   try {
     if (keytar && typeof (keytar as any).getPassword === 'function') {
-      const t = await (keytar as any).getPassword(SERVICE_NAME, SERVICE_ACCOUNT);
+      const t = await (keytar as any).getPassword(SERVICE_NAME, provider);
       if (t) return t;
     }
   } catch (err) {
@@ -35,18 +38,18 @@ async function getStoredToken(): Promise<string | null> {
   }
 
   try {
-    const data = await fs.readFile(FALLBACK_TOKEN_FILE, 'utf-8');
+    const data = await fs.readFile(getFallbackTokenFile(provider), 'utf-8');
     return data.trim() || null;
   } catch (err) {
     return null;
   }
 }
 
-async function storeToken(token: string): Promise<void> {
+async function storeToken(provider: AuthProvider, token: string): Promise<void> {
   // Try keytar first, fall back to file storage
   try {
     if (keytar && typeof (keytar as any).setPassword === 'function') {
-      await (keytar as any).setPassword(SERVICE_NAME, SERVICE_ACCOUNT, token);
+      await (keytar as any).setPassword(SERVICE_NAME, provider, token);
       return;
     }
   } catch (err) {
@@ -55,17 +58,17 @@ async function storeToken(token: string): Promise<void> {
 
   try {
     await fs.mkdir(FALLBACK_DIR, { recursive: true });
-    await fs.writeFile(FALLBACK_TOKEN_FILE, token, { encoding: 'utf-8', mode: 0o600 });
+    await fs.writeFile(getFallbackTokenFile(provider), token, { encoding: 'utf-8', mode: 0o600 });
   } catch (err) {
     console.warn('⚠️ Could not store token to fallback file store:', err);
   }
 }
 
-async function deleteToken(): Promise<boolean> {
+async function deleteToken(provider: AuthProvider): Promise<boolean> {
   let deleted = false;
   try {
     if (keytar && typeof (keytar as any).deletePassword === 'function') {
-      const res = await (keytar as any).deletePassword(SERVICE_NAME, SERVICE_ACCOUNT);
+      const res = await (keytar as any).deletePassword(SERVICE_NAME, provider);
       deleted = !!res;
     }
   } catch (err) {
@@ -73,7 +76,7 @@ async function deleteToken(): Promise<boolean> {
   }
 
   try {
-    await fs.unlink(FALLBACK_TOKEN_FILE);
+    await fs.unlink(getFallbackTokenFile(provider));
     deleted = true;
   } catch (err) {
     // ignore
@@ -93,6 +96,18 @@ async function getGitHubUsername(token: string): Promise<string | null> {
   }
 }
 
+async function getGoogleUserEmail(token: string): Promise<string | null> {
+  try {
+    const response = await axios.get<{ email?: string }>(
+      'https://openidconnect.googleapis.com/v1/userinfo',
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data.email || null;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function promptUser(question: string): Promise<string> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
@@ -104,6 +119,20 @@ async function promptUser(question: string): Promise<string> {
       resolve(answer);
     });
   });
+}
+
+async function promptAuthProvider(): Promise<AuthProvider> {
+  console.log('\n\x1b[36m╭─ Sign In ────────────────────────────────────────────╮\x1b[0m');
+  console.log('\x1b[36m│ 1. Sign in with Google                              │\x1b[0m');
+  console.log('\x1b[36m│ 2. Sign in with GitHub                              │\x1b[0m');
+  console.log('\x1b[36m╰──────────────────────────────────────────────────────╯\x1b[0m');
+
+  while (true) {
+    const choice = await promptUser('\nSelect option (1-2): ');
+    if (choice.trim() === '1') return 'google';
+    if (choice.trim() === '2') return 'github';
+    console.error('\x1b[31m❌ Select 1 for Google or 2 for GitHub.\x1b[0m');
+  }
 }
 
 async function runOnboarding(): Promise<CodeOllieConfig> {
@@ -163,60 +192,78 @@ async function runOnboarding(): Promise<CodeOllieConfig> {
 }
 
 async function main() {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-
   const args = process.argv.slice(2);
   const forceAuth = args.includes('auth');
   const doLogout = args.includes('logout');
   const noAuth = args.includes('--no-auth');
+  const authProviderArg = args.find((arg) => arg.startsWith('--auth-provider='));
+  const authProviderIndex = args.indexOf('--auth-provider');
+  const requestedAuthProvider = authProviderArg?.slice('--auth-provider='.length)
+    || (authProviderIndex !== -1 ? args[authProviderIndex + 1] : undefined);
+  const authProviderValue = requestedAuthProvider
+    || (!noAuth && !doLogout ? await promptAuthProvider() : 'github');
+  if (authProviderValue !== 'github' && authProviderValue !== 'google') {
+    console.error('\x1b[31m❌ Auth provider must be either "github" or "google".\x1b[0m');
+    process.exit(1);
+  }
+  const authProvider: AuthProvider = authProviderValue;
   const tokenArgIndex = args.indexOf('--token');
   const tokenArg = tokenArgIndex !== -1 && args.length > tokenArgIndex + 1 ? args[tokenArgIndex + 1] : undefined;
 
-  if (!noAuth && !clientId) {
-    console.error('\x1b[31m❌ Missing GitHub Client ID. Please set GITHUB_CLIENT_ID in .env or run with --no-auth\x1b[0m');
-    process.exit(1);
-  }
-
   if (doLogout) {
-    const deleted = await deleteToken();
-    if (deleted) console.log('\x1b[32m✅ Logged out and removed stored token.\x1b[0m');
+    const deleted = await deleteToken(authProvider);
+    if (deleted) console.log(`\x1b[32m✅ Logged out of ${authProvider} and removed its stored token.\x1b[0m`);
     else console.log('\x1b[33m⚠️ No stored token found.\x1b[0m');
     process.exit(0);
   }
 
   try {
+    const clientId = authProvider === 'google'
+      ? process.env.GOOGLE_CLIENT_ID
+      : process.env.GITHUB_CLIENT_ID;
     let token: string | null = null;
 
     if (tokenArg) {
       token = tokenArg;
       // store for future use
-      await storeToken(token);
+      await storeToken(authProvider, token);
       console.log('\x1b[32m✅ Token provided and stored.\x1b[0m');
     }
 
     if (!token && !forceAuth && !noAuth) {
-      token = await getStoredToken();
+      token = await getStoredToken(authProvider);
       if (token) {
-        console.log('\x1b[2m🔒 Using stored GitHub token.\x1b[0m');
+        console.log(`\x1b[2m🔒 Using stored ${authProvider} token.\x1b[0m`);
       }
     }
 
     if (!token && !noAuth) {
-      // Run device flow to get token
-      const auth = new GitHubAuth(clientId as string);
-      console.log('\x1b[2m🔐 Authenticating with GitHub... (Device Flow)\x1b[0m');
-      token = await auth.authenticate();
-      await storeToken(token);
+      if (!clientId) {
+        const variable = authProvider === 'google' ? 'GOOGLE_CLIENT_ID' : 'GITHUB_CLIENT_ID';
+        throw new Error(`Missing ${variable}. Set it in .env or run with --no-auth.`);
+      }
+
+      if (authProvider === 'google') {
+        const auth = new GoogleAuth(clientId);
+        token = await auth.authenticate();
+      } else {
+        const auth = new GitHubAuth(clientId);
+        console.log('\x1b[2m🔐 Authenticating with GitHub... (Device Flow)\x1b[0m');
+        token = await auth.authenticate();
+      }
+      await storeToken(authProvider, token);
     }
 
     if (noAuth) {
-      console.log('\x1b[33m⚠️ Running without GitHub authentication (--no-auth). Some features may be limited.\x1b[0m');
+      console.log(`\x1b[33m⚠️ Running without ${authProvider} authentication (--no-auth). Some features may be limited.\x1b[0m`);
     }
 
     // Optionally show username
     if (token) {
-      const username = await getGitHubUsername(token as string);
-      if (username) console.log(`\x1b[32m✅ Signed in as ${username}\x1b[0m\n`);
+      const identity = authProvider === 'google'
+        ? await getGoogleUserEmail(token)
+        : await getGitHubUsername(token);
+      if (identity) console.log(`\x1b[32m✅ Signed in to ${authProvider} as ${identity}\x1b[0m\n`);
     }
 
     // Load or create config
