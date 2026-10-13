@@ -1,4 +1,5 @@
 **CodeOllie CLI🤖**
+_*note, for macos and windows releases, go to the tags page._
                           
 A highly intelligent, cross-platform AI-powered coding assistant that 
 runs right inside your terminal. It creates, views, and edits files 
