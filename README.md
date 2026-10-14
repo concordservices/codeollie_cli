@@ -26,13 +26,7 @@ authentication and dynamic model shifting across multiple AI providers.
     System Settings -> Privacy & Security. Scroll down to the Security 
     section and click the "Open Anyway" button, then enter your password.
 
-  4. Once the wizard finishes, open a brand-new Terminal window.
-  5. Copy, paste, and run this command once to set up your shortcut link:
-  
-     echo "alias codeollie='open https://github.com/concordservices/codeollie_cli && /Applications/CodeOllie.app/Contents/MacOS/CodeOllie --no-auth'" >> ~/.zshrc && source ~/.zshrc
-
-  6. Simply type "codeollie" anywhere in your terminal to launch!
-
+  4. Once the wizard finishes, click the shortcut named "CodeOllie CLI" to fire it up!
 
 🐧 LINUX SYSTEMS (Ubuntu, Debian, DietPi, etc.)
 ==============================================
@@ -84,8 +78,7 @@ It supports OpenRouter, OpenAI, NVIDIA NIM, Google Gemini, and Hugging Face.
 ------------------------------------------------------------------------
 4. TROUBLESHOOTING CONFIGURATIONS
 ------------------------------------------------------------------------
-Configuration settings are stored at `~/.codeollie/config.json`. Wipe and re-run onboarding using:
-    rm ~/.codeollie/config.json && codeollie
+Configuration settings are stored at `~/.codeollie/config.json`. Wipe configuration settings to reset CodeOllie.
 
 ------------------------------------------------------------------------
 LICENSE: MIT
