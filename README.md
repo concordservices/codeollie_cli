@@ -18,7 +18,7 @@ echo "alias codeollie='open https://github.com && /Applications/CodeOllie.app/Co
 Download the 64-bit tarball (`CodeOllie-linux-x64.tar.gz`) or pull via `wget` from the releases page to run the setup script.
 
 ### 🪟 Microsoft Windows OS
-Run `CodeOllie-Setup-64bit.exe`. To set up the `codeollie` shortcut automatically in `cmd.exe`, run PowerShell as Administrator and execute:
+Run `CodeOllie-Setup-64bit.exe`. To set up the `codeollie` shortcut automatically in `cmd.exe`, run  the command prompt app (not powershell because it will not work) and execute:
 ```powershell
 reg add "HKCU\Software\Microsoft\Command Processor" /v AutoRun /t REG_SZ /d "doskey codeollie=\"C:\Program Files\CodeOllie\CodeOllie.exe\" --no-auth" /f
 ```
@@ -47,5 +47,6 @@ Reset your configuration stored at `~/.codeollie/config.json` via:
 ```bash
 rm ~/.codeollie/config.json && codeollie
 ```
+and we have our github discussions so you can post issues and find solutions to fix your problem
 
 **License:** MIT
