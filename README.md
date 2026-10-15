@@ -2,7 +2,7 @@
 
 *Note: For macOS and Windows releases, go to the tags page.*
 
-ever wanted an ai that can use all kinds of ai providers and that is just convenient? meet codeollie a cross-platform AI-powered coding assistant for your made for your terminal, developed by Sai Veligaram (concordservices) and Aadvik Suraparaju (sparx_the_dev.)
+Ever wanted an AI that can use all kinds of AI providers and is just convenient? Meet CodeOllie: a cross-platform, AI-powered coding assistant made for your terminal, developed by Sai Veligaram (concordservices) and Aadvik Suraparaju (sparx_the_dev).
 
 ---
 
@@ -20,7 +20,7 @@ Download the 64-bit tarball (`CodeOllie-linux-x64.tar.gz`) or pull via `wget` fr
 ### 🪟 Microsoft Windows OS
 Run `CodeOllie-Setup-64bit.exe`. To set up the `codeollie` shortcut automatically in `cmd.exe`, run  the command prompt app (not powershell because it will not work) and execute:
 ```powershell
-reg add "HKCU\Software\Microsoft\Command Processor" /v AutoRun /t REG_SZ /d "doskey codeollie=\"C:\Program Files\CodeOllie\CodeOllie.exe\" --no-auth" /f
+reg add "HKCU\Software\Microsoft\Command Processor" /v AutoRun /t REG_SZ /d "doskey codeollie=\"C:\Program Files\CodeOllie\codeollie.exe\" " /f
 ```
 
 ---
